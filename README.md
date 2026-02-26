@@ -29,7 +29,7 @@ El sistema:
 .
 ├── Examples.json        # Ejemplos few-shot con soluciones óptimas
 ├── Task.json            # Dataset de evaluación (solo escenarios)
-├── planning.py          # Script principal
+├── planning.ipynb          # Script principal
 ├── submission.json      # Archivo generado para enviar
 └── README.md
 ```
