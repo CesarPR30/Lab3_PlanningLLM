@@ -5,6 +5,15 @@ Este repositorio contiene la solución para el **Laboratorio 3: Planning**, dond
 El agente recibe escenarios descritos en lenguaje natural y genera una **secuencia de acciones** para alcanzar el objetivo.
 
 ---
+## Colab
+
+Link: 
+https://colab.research.google.com/drive/1MCz9s9pYaYHUccPanRlkV3Wd3WWHIMHF?usp=sharing
+
+
+
+
+---
 
 ## 🎯 Objetivo
 
@@ -212,6 +221,14 @@ top_p=1.0
 Esto mejora el score sin romper las reglas.
 
 ---
+
+## 💻 Colab
+
+Link:  
+https://colab.research.google.com/drive/1MCz9s9pYaYHUccPanRlkV3Wd3WWHIMHF?usp=sharing
+
+---
+
 
 ## 👤 Grupo - OptimusPrime
 
