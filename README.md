@@ -1,119 +1,219 @@
-# 🧠 Laboratorio 3 – Planning with Qwen3-8B
+# 🧠 Laboratorio 3 – Planning con Qwen3-8B
 
-## 📌 Overview
+Este repositorio contiene la solución para el **Laboratorio 3: Planning**, donde se debe diseñar un agente capaz de resolver problemas lógicos de múltiples pasos dentro de una simulación virtual usando **Qwen3-8B** con inferencia determinista.
 
-Este proyecto implementa algoritmos de planificación simbólica utilizando **Qwen3-8B** para resolver problemas lógicos de múltiples pasos dentro de una simulación virtual.
-
-El sistema:
-
-- Lee escenarios desde `Task.json`
-- Genera secuencias de acciones óptimas
-- Calcula automáticamente el nivel de complejidad
-- Produce un archivo `submission.json`
+El agente recibe escenarios descritos en lenguaje natural y genera una **secuencia de acciones** para alcanzar el objetivo.
 
 ---
 
-## ⚙️ Restricciones del laboratorio
+## 🎯 Objetivo
 
-✔ Solo se permite **Qwen3-8B**  
-✔ No se permite fine-tuning  
-✔ Inferencia determinista (`temperature=0.0`)  
-✔ Tiempo máximo de ejecución < 2 minutos en Colab  
-✔ Las salidas deben ser reproducibles para auditoría  
+Diseñar un agente que:
+
+- Use exclusivamente **Qwen3-8B**
+- Use inferencia determinista (**temperature=0.0**, `do_sample=False`)
+- Respete el límite de **2 minutos por task en Colab**
+- Procese `Task.json` y genere un `submission.json`
+- Calcule y devuelva:
+  - `complexity_level`
+  - `target_action_sequence`
 
 ---
 
-## 📂 Estructura del Proyecto
+## 📁 Estructura del repositorio
 
 ```
-.
-├── Examples.json        # Ejemplos few-shot con soluciones óptimas
-├── Task.json            # Dataset de evaluación (solo escenarios)
-├── planning.ipynb          # Script principal
-├── submission.json      # Archivo generado para enviar
-└── README.md
+submit.py        -> Genera submission.json
+evaluator.py     -> Métrica usada en la evaluación
+student_agent.py -> Implementación del agente (archivo principal evaluado)
+llm_engine.py    -> Carga de Qwen3-8B y wrapper de inferencia
+dev_test.py      -> Script para probar el agente y ver score
+Examples.json    -> Dataset de desarrollo con soluciones óptimas
+Task.json        -> Dataset de evaluación (solo escenarios)
+colab.ipynb      -> Notebook con todo integrado para correr en Colab
+README.md        -> Este archivo
+```
+
+⚠️ Importante:
+
+El archivo que se revisa en la auditoría es:
+
+```
+student_agent.py
 ```
 
 ---
 
-## 🏗️ Arquitectura del Enfoque
+## 🧠 Arquitectura del agente
 
-Se utiliza una arquitectura **Few-Shot Prompting** con:
+La solución usa:
 
-- Separación automática de dominios:
-  - `set of blocks`
-  - `set of objects`
-- 2–3 ejemplos relevantes por dominio
-- Generación determinista
-- Validación robusta de JSON
+- Prompt Engineering con reglas estrictas
+- Few-shot prompting usando Examples.json
+- Retrieval por similitud (Jaccard)
+- Separación por dominio:
+  - Objects domain
+  - Blocks domain
+- Inferencia determinista con Qwen3-8B
+- Generación de planes mínimos
 
-El modelo devuelve únicamente:
+El agente:
 
-```json
-{
-  "complexity_level": 4,
-  "target_action_sequence": [
-    "(engage_payload a)",
-    "(unmount_node a b)",
-    "(mount_node a c)",
-    "(release_payload a)"
-  ]
-}
-```
-
-
-## 🚀 Cómo Ejecutarlo en Google Colab
-
-### 1️⃣ Activar GPU
-
-Runtime → Change runtime type → GPU
+1. Detecta el dominio (blocks / objects)
+2. Extrae el último STATEMENT
+3. Busca ejemplos similares
+4. Construye prompt con reglas
+5. Llama a Qwen3-8B
+6. Devuelve lista de acciones
 
 ---
 
-### 2️⃣ Instalar dependencias
+## ✅ Configuración obligatoria del modelo
+
+El laboratorio exige:
+
+```
+temperature = 0.0
+do_sample = False
+top_p = 1.0
+```
+
+Ejemplo:
 
 ```python
-!pip install transformers accelerate
-```
-
----
-
-### 3️⃣ Cargar modelo
-
-```python
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
-
-model_name = "Qwen/Qwen3-8B"
-
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    torch_dtype=torch.float16,
-    device_map="auto"
+resp = qwen(
+    prompt=prompt,
+    system=system,
+    temperature=0.0,
+    do_sample=False,
+    top_p=1.0,
+    max_new_tokens=256,
+    enable_thinking=False,
+    stream=False
 )
+```
 
-model.eval()
+Esto asegura:
+
+- reproducibilidad
+- auditoría correcta
+- leaderboard válido
+
+---
+
+## 🚀 Cómo ejecutar
+
+### 1) Test en desarrollo
+
+```
+python dev_test.py
+```
+
+Esto:
+
+- carga Examples.json
+- ejecuta el agente
+- calcula score
+- muestra tiempo por task
+
+---
+
+### 2) Generar submission
+
+```
+python submit.py
+```
+
+Esto:
+
+- lee Task.json
+- ejecuta todos los tasks
+- crea submission.json
+
+Formato esperado:
+
+```
+[
+  {
+    "assembly_task_id": "...",
+    "complexity_level": 4,
+    "target_action_sequence": [
+      "(attack a)",
+      "(overcome a b)"
+    ]
+  }
+]
 ```
 
 ---
 
-### 4️⃣ Ejecutar generación
+### 3) Ejecutar en Colab
 
-```python
-main(model, tokenizer)
-```
-
-Se generará:
+Abrir:
 
 ```
-submission.json
+colab.ipynb
+```
+
+Este notebook contiene:
+
+- instalación
+- carga del modelo
+- ejecución de tests
+- generación de submission.json
+
+---
+
+## ⏱ Restricción de tiempo
+
+Máximo permitido:
+
+```
+2 minutos por task
+```
+
+Para cumplirlo:
+
+- pocos shots
+- prompts compactos
+- max_new_tokens limitado
+- temperature = 0
+
+---
+
+## 🔍 Auditoría
+
+El profesor verificará:
+
+- que se use Qwen3-8B
+- que temperature = 0
+- que las salidas sean deterministas
+- que student_agent.py produzca lo mismo
+
+Por eso el código usa:
+
+```
+do_sample=False
+temperature=0.0
+top_p=1.0
 ```
 
 ---
 
-## 👤 Grupo - OptimusPrime:
+## 📊 Estrategias usadas
 
-* César Eduardo Pajuelo Reyes
-* Gonzalo Alonso Rodriguez Gutierrez
+- Few-shot retrieval
+- Prompt rules estrictas
+- Domain-specific prompting
+- Deterministic decoding
+- Minimal plan bias
+- Goal-focused constraints
+
+Esto mejora el score sin romper las reglas.
+
+---
+
+## 👤 Grupo - OptimusPrime
+
+- César Eduardo Pajuelo Reyes
+- Gonzalo Alonso Rodriguez Gutierrez
